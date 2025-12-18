@@ -1,0 +1,9 @@
+{
+  "name": "com.bzinkan.noveforge",
+  "version": "1.0.0",
+  "displayName": "NoveForge V2",
+  "description": "AI-powered 3D scene generation for Unity.",
+  "unity": "2021.3",
+  "author": { "name": "Brian Zinkan" },
+  "dependencies": {}
+}
