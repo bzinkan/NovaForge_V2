@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using NovaForge.Networking; // Connects to your API Manager
+using NovaForge.Settings;
 // using NovaForge.Models; // We'll uncomment this when we handle the response
 
 namespace NovaForge.Editor
@@ -11,6 +12,10 @@ namespace NovaForge.Editor
         string userPrompt = "A futuristic city with neon lights..."; // Default text
         string statusMessage = "Ready to create.";
         bool isProcessing = false;
+
+        public NovaForgeConfig config;
+
+        readonly NovaForgeAPIManager apiManager = new NovaForgeAPIManager();
 
         // 2. Add the Menu Item
         [MenuItem("NovaForge/Open Generator ✨")]
@@ -27,6 +32,10 @@ namespace NovaForge.Editor
             GUILayout.Space(10);
             GUILayout.Label("NovaForge V2 Generator", EditorStyles.boldLabel);
             GUILayout.Space(5);
+
+            config = (NovaForgeConfig)EditorGUILayout.ObjectField("Config", config, typeof(NovaForgeConfig), false);
+
+            GUILayout.Space(10);
 
             // -- Prompt Input --
             GUILayout.Label("Describe your scene:", EditorStyles.label);
@@ -57,16 +66,24 @@ namespace NovaForge.Editor
         // 4. The Trigger Logic
         private async void TriggerGeneration()
         {
+            if (config == null)
+            {
+                statusMessage = "Please assign a NovaForge Config asset.";
+                return;
+            }
+
             isProcessing = true;
-            statusMessage = "Contacting AI... 🤖";
+            statusMessage = "Connecting to NovaForge Cloud...";
             
             // Just a debug log for now to prove the UI works
             Debug.Log($"[NovaForge] Sending prompt: {userPrompt}");
 
-            // TODO: Connect this to NovaForgeAPIManager later!
-            await System.Threading.Tasks.Task.Delay(1000); // Fake delay for effect
+            string response = await apiManager.RequestSceneGeneration(userPrompt, config);
 
-            statusMessage = "Generation Complete! (Simulation)";
+            statusMessage = string.IsNullOrEmpty(response)
+                ? "Generation failed. Check console for errors."
+                : "Generation request completed.";
+
             isProcessing = false;
         }
     }
