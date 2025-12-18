@@ -1,0 +1,5 @@
+{
+    "name": "NovaForge.Editor",
+    "references": [ "NovaForge.Runtime" ],
+    "includePlatforms": [ "Editor" ]
+}
