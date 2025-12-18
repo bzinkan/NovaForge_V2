@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace NovaForge.Models
 {
@@ -7,15 +8,17 @@ namespace NovaForge.Models
     public class NovaForgeSceneRecipe
     {
         public string novaforge_version;
-        public MetadataData metadata;
+        public string scene_id;
+        public Metadata metadata;
         public EnvironmentData environment;
-        public List<ObjectData> objects = new();
+        public List<ObjectData> objects;
     }
 
     [Serializable]
-    public class MetadataData
+    public class Metadata
     {
         public string world_name;
+        public int generation_seed;
     }
 
     [Serializable]
@@ -28,24 +31,28 @@ namespace NovaForge.Models
     [Serializable]
     public class LightingData
     {
+        public string ambient_mode;
         public string sky_color;
         public string equator_color;
         public string ground_color;
         public float sun_intensity;
+        public float fog_density;
     }
 
     [Serializable]
     public class TerrainData
     {
         public bool enabled;
-        public float[] size;
+        public float[] size; // [width, length, height]
+        public string heightmap_url;
     }
 
     [Serializable]
     public class ObjectData
     {
         public string id;
-        public string source;
+        public string source; // "MESHY", "LEONARDO", etc.
+        public string asset_type;
         public TransformData transform;
     }
 
