@@ -1,7 +1,8 @@
-using NovaForge.Networking;
-using NovaForge.Settings;
-using UnityEditor;
 using UnityEngine;
+using UnityEditor;
+using NovaForge.Networking; // 👈 This enables access to the APIManager
+// using NovaForge.Models;  // (Add this later when we implement the models)
+using NovaForge.Settings;
 
 namespace NovaForge.Editor
 {
