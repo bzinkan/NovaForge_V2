@@ -1,6 +1,5 @@
-using System.Collections.Generic;
-using NovaForge.Models;
 using UnityEngine;
+using NovaForge.Models;
 
 namespace NovaForge.Core
 {
@@ -8,85 +7,65 @@ namespace NovaForge.Core
     {
         public static void ParseAndBuild(string jsonResponse)
         {
-            if (string.IsNullOrWhiteSpace(jsonResponse))
+            // 1. Convert JSON to C# Object
+            NovaForgeSceneRecipe recipe = JsonUtility.FromJson<NovaForgeSceneRecipe>(jsonResponse);
+
+            if (recipe == null)
             {
-                Debug.LogError("NovaForgeSceneParser received empty JSON response.");
+                Debug.LogError("[NovaForge] Failed to parse scene recipe.");
                 return;
             }
 
-            NovaForgeSceneRecipe sceneRecipe = JsonUtility.FromJson<NovaForgeSceneRecipe>(jsonResponse);
-            if (sceneRecipe == null)
+            Debug.Log($"[NovaForge] Building Scene: {recipe.metadata.world_name}");
+
+            // 2. Apply Lighting
+            ApplyLighting(recipe.environment.lighting);
+
+            // 3. Build Terrain (Stub)
+            if (recipe.environment.terrain.enabled)
             {
-                Debug.LogError("NovaForgeSceneParser failed to deserialize JSON response.");
-                return;
+                Debug.Log($"[NovaForge] Terrain requested. Size: {recipe.environment.terrain.size[0]}x{recipe.environment.terrain.size[1]}");
             }
 
-            ApplyLighting(sceneRecipe.environment?.lighting);
-
-            if (sceneRecipe.objects == null)
+            // 4. Spawn Objects
+            foreach (var obj in recipe.objects)
             {
-                return;
-            }
-
-            foreach (ObjectData objectData in sceneRecipe.objects)
-            {
-                if (objectData == null)
-                {
-                    continue;
-                }
-
-                GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cube.name = string.IsNullOrWhiteSpace(objectData.id) ? "NovaForgeObject" : objectData.id;
-
-                Transform transform = cube.transform;
-                transform.position = ToVector3(objectData.transform?.position, Vector3.zero);
-                transform.rotation = Quaternion.Euler(ToVector3(objectData.transform?.rotation, Vector3.zero));
-                transform.localScale = ToVector3(objectData.transform?.scale, Vector3.one);
+                SpawnPlaceholder(obj);
             }
         }
 
-        private static void ApplyLighting(LightingData lighting)
+        private static void ApplyLighting(LightingData data)
         {
-            if (lighting == null)
-            {
-                return;
-            }
+            Color sky, equator, ground;
+            ColorUtility.TryParseHtmlString(data.sky_color, out sky);
+            ColorUtility.TryParseHtmlString(data.equator_color, out equator);
+            ColorUtility.TryParseHtmlString(data.ground_color, out ground);
 
-            if (TryParseColor(lighting.sky_color, out Color skyColor))
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = sky;
+            RenderSettings.ambientEquatorColor = equator;
+            RenderSettings.ambientGroundColor = ground;
+            RenderSettings.fogDensity = data.fog_density;
+            
+            Light sun = GameObject.FindObjectOfType<Light>();
+            if (sun != null && sun.type == LightType.Directional)
             {
-                RenderSettings.ambientSkyColor = skyColor;
-            }
-
-            if (TryParseColor(lighting.equator_color, out Color equatorColor))
-            {
-                RenderSettings.ambientEquatorColor = equatorColor;
-            }
-
-            if (TryParseColor(lighting.ground_color, out Color groundColor))
-            {
-                RenderSettings.ambientGroundColor = groundColor;
+                sun.intensity = data.sun_intensity;
             }
         }
 
-        private static bool TryParseColor(string hexColor, out Color color)
+        private static void SpawnPlaceholder(ObjectData objData)
         {
-            if (!string.IsNullOrWhiteSpace(hexColor))
-            {
-                return ColorUtility.TryParseHtmlString(hexColor, out color);
-            }
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.name = $"{objData.source}_{objData.id}";
+            
+            Vector3 pos = new Vector3(objData.transform.position[0], objData.transform.position[1], objData.transform.position[2]);
+            Vector3 rot = new Vector3(objData.transform.rotation[0], objData.transform.rotation[1], objData.transform.rotation[2]);
+            Vector3 scale = new Vector3(objData.transform.scale[0], objData.transform.scale[1], objData.transform.scale[2]);
 
-            color = default;
-            return false;
-        }
-
-        private static Vector3 ToVector3(IReadOnlyList<float> values, Vector3 fallback)
-        {
-            if (values == null || values.Count < 3)
-            {
-                return fallback;
-            }
-
-            return new Vector3(values[0], values[1], values[2]);
+            cube.transform.position = pos;
+            cube.transform.eulerAngles = rot;
+            cube.transform.localScale = scale;
         }
     }
 }
