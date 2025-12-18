@@ -1,23 +1,55 @@
-/[Ll]ibrary/
-/[Tt]emp/
-/[Oo]bj/
-/[Bb]uild/
-/[Bb]uilds/
-/[Logs]/
-/[MemoryCaptures]/
-/UserSettings/
-/ProjectSettings/ProjectVersion.txt
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+
+# Visual Studio / Rider
+.vscode/
+.idea/
 *.csproj
 *.unityproj
 *.sln
-*.suo
-*.tmp
-*.user
+*.sln.dotsettings
 *.userprefs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Unity cache
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*
+/[Aa]ssets/[Ss]treamingAssets/*
+
+# Packages
+Packages/com.*
+
+# Auto-generated
 *.pidb
+*.suo
+*.user
+*.userosscache
 *.booproj
 *.svd
-*.pdb
-*.opendb
-*.IDB
-*.VC.db
+
+# Builds
+*.apk
+*.aab
+*.app
+*.exe
+*.ipa
+*.jar
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+
+# Crashlytics
+crashlytics-build.properties
+
+# Logs
+*.log
+

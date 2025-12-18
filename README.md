@@ -1,26 +1,42 @@
-# NovaForge_V2 🚀
+# NovaForge V2
 
-**NovaForge_V2** is an AI-driven Unity plugin designed to generate 3D scenes directly within the Unity Editor using text or image prompts.
+NovaForge V2 is an AI-powered Unity package that orchestrates scene generation inside the editor using services like OpenAI, Meshy, and Leonardo. The repository is structured as a Unity Package Manager (UPM) package so it can be dropped directly into projects.
 
-## 🛠️ Tech Stack & Workflow
-* **Architect:** Gemini 
-* **Engineer:** Codex
-* **Version Control:** GitHub
-* **Engine:** Unity (Built-in RP)
-* **APIs:** OpenAI, Meshy, Leonardo, Gradient, and Droplet Blender worker.
+## Package manifest
 
-## 📦 Installation (UPM)
-To use this as a package in Unity, add the following URL via the **Package Manager > Add package from git URL**:
-`https://github.com/bzinkan/NovaForge_V2.git`
+Root `package.json` aligns with Unity 2021.3 and identifies the package for UPM consumption.
 
-## 🏗️ Project Structure
-This project follows the **Unity Package Manager (UPM)** structure:
-- `/Runtime`: Core logic, API networking, and data models.
-- `/Editor`: Custom Unity Editor windows and inspector tools.
-- `/Settings`: ScriptableObjects for API configuration.
+## Project layout
 
-## 🚀 Roadmap
-- [ ] Implement Universal API Gateway (Async/Await)
-- [ ] Define JSON Scene Schema
-- [ ] Build Editor Window Interface
-- [ ] Integrate 3D Asset Generation (Meshy/Leonardo)
+```
+/NovaForge_V2
+├── package.json
+├── Runtime/
+│   ├── NovaForge.Runtime.asmdef
+│   ├── Networking/
+│   ├── Models/
+│   └── Settings/
+├── Editor/
+│   ├── NovaForge.Editor.asmdef
+│   └── NovaForgeWindow.cs
+├── .gitignore
+└── README.md
+```
+
+### Runtime
+- **Networking/NovaForgeAPIManager.cs** — Handles async POST requests via `UnityWebRequest` for downstream services.
+- **Settings/NovaForgeSettings.cs** — ScriptableObject storage for OpenAI, Meshy, and Leonardo API keys.
+- **Models/NovaForgeScene.cs** — Serializable scene and scene-object containers used to exchange generation results.
+
+### Editor
+- **NovaForgeWindow.cs** — Opens from `NovaForge/Open Generator` and provides a prompt-driven UI entry point.
+
+## Usage
+1. Import the package through UPM using the Git URL of this repository.
+2. Create a `NovaForgeSettings` asset via **Create > NovaForge > Settings** and populate API keys.
+3. Open **NovaForge > Open Generator** to access the generator window.
+
+## Roadmap
+- Wire editor actions to the networking layer for live generation calls.
+- Expand scene models to mirror service responses.
+- Add validation and diagnostics for API connectivity.
