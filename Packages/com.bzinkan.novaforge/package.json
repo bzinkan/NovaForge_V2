@@ -1,8 +1,8 @@
 {
   "name": "com.bzinkan.novaforge",
-  "version": "1.0.0",
-  "displayName": "NovaForge V2",
-  "description": "AI-powered 3D scene generation for Unity.",
+  "version": "0.2.0",
+  "displayName": "NovaForge",
+  "description": "NovaForge — deterministic, data-driven Unity scene and terrain generation.",
   "unity": "2021.3",
   "author": {
     "name": "Brian Zinkan"

@@ -1,28 +1,28 @@
-# NovaForge V2
+# NovaForge
 
-NovaForge V2 is an AI-powered Unity package that orchestrates scene generation inside the editor using services like OpenAI, Meshy, and Leonardo. The repository is structured as a Unity Package Manager (UPM) package so it can be dropped directly into projects.
+NovaForge is a deterministic, data-driven Unity package for scene and terrain generation. The repository is structured as a Unity Package Manager (UPM) mono-repo so the actual package lives at `Packages/com.bzinkan.novaforge/`.
 
-## Package manifest
-
-Root `package.json` aligns with Unity 2021.3 and identifies the package for UPM consumption as `com.bzinkan.novaforge`.
-When cloning or downloading the repository, the folder itself (`NovaForge_V2/`) is the Unity package root that should be added
-to your `Packages/` directory or referenced via Git in the Package Manager.
-
-## Project layout
+## Installation via Git URL
+Add the package through Unity's Package Manager using:
 
 ```
-/NovaForge_V2
-├── package.json
-├── Runtime/
-│   ├── NovaForge.Runtime.asmdef
-│   ├── Networking/
-│   ├── Models/
-│   └── Settings/
-├── Editor/
-│   ├── NovaForge.Editor.asmdef
-│   └── NovaForgeWindow.cs
-├── .gitignore
-└── README.md
+https://github.com/bzinkan/NovaForge_V2.git?path=Packages/com.bzinkan.novaforge
+```
+
+## Package layout
+
+```
+NovaForge_V2/
+└─ Packages/
+   └─ com.bzinkan.novaforge/
+      ├─ package.json
+      ├─ README.md
+      ├─ Runtime/
+      │  ├─ NovaForge.Runtime.asmdef
+      │  └─ (runtime scripts)
+      └─ Editor/
+         ├─ NovaForge.Editor.asmdef
+         └─ (editor scripts)
 ```
 
 ### Runtime
@@ -34,11 +34,6 @@ to your `Packages/` directory or referenced via Git in the Package Manager.
 - **NovaForgeWindow.cs** — Opens from `NovaForge/Open Generator` and provides a prompt-driven UI entry point.
 
 ## Usage
-1. Import the package through UPM using the Git URL of this repository.
+1. Import the package through UPM using the Git URL above.
 2. Create a `NovaForgeSettings` asset via **Create > NovaForge > Settings** and populate API keys.
 3. Open **NovaForge > Open Generator** to access the generator window.
-
-## Roadmap
-- Wire editor actions to the networking layer for live generation calls.
-- Expand scene models to mirror service responses.
-- Add validation and diagnostics for API connectivity.
