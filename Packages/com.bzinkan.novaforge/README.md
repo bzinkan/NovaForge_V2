@@ -4,7 +4,9 @@ NovaForge V2 is an AI-powered Unity package that orchestrates scene generation i
 
 ## Package manifest
 
-Root `package.json` aligns with Unity 2021.3 and identifies the package for UPM consumption.
+Root `package.json` aligns with Unity 2021.3 and identifies the package for UPM consumption as `com.bzinkan.novaforge`.
+When cloning or downloading the repository, the folder itself (`NovaForge_V2/`) is the Unity package root that should be added
+to your `Packages/` directory or referenced via Git in the Package Manager.
 
 ## Project layout
 
