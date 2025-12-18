@@ -1,28 +1,26 @@
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
+using NovaForge.Settings;
 
 // 👇 THIS NAMESPACE MUST MATCH WHAT YOUR WINDOW SCRIPT EXPECTS
 namespace NovaForge.Networking 
 {
     public class NovaForgeAPIManager
     {
-        // A generic POST method to handle your AI calls
-        public async Task<string> PostAsync(string url, string jsonData, string apiKey)
+        public async Task<string> RequestSceneGeneration(string prompt, NovaForgeConfig config)
         {
-            using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+            if (config == null)
             {
-                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
-                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                Debug.LogError("NovaForgeConfig is missing. Please assign a config asset.");
+                return null;
+            }
+
+            string jsonData = $"{{\"user_prompt\":\"{EscapeJson(prompt)}\",\"auth_token\":\"{EscapeJson(config.userAuthToken)}\"}}";
+
+            using (UnityWebRequest request = UnityWebRequest.Post(config.saasEndpointURL, jsonData, "application/json"))
+            {
                 request.downloadHandler = new DownloadHandlerBuffer();
-                
-                request.SetRequestHeader("Content-Type", "application/json");
-                
-                // Only add Auth header if a key is provided
-                if (!string.IsNullOrEmpty(apiKey))
-                {
-                    request.SetRequestHeader("Authorization", "Bearer " + apiKey);
-                }
 
                 var operation = request.SendWebRequest();
 
@@ -33,12 +31,15 @@ namespace NovaForge.Networking
                 {
                     return request.downloadHandler.text;
                 }
-                else
-                {
-                    Debug.LogError($"NovaForge API Error: {request.error} | Response: {request.downloadHandler.text}");
-                    return null;
-                }
+
+                Debug.LogError($"NovaForge API Error: {request.error} | Response: {request.downloadHandler.text}");
+                return null;
             }
+        }
+
+        private static string EscapeJson(string value)
+        {
+            return string.IsNullOrEmpty(value) ? string.Empty : value.Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
     }
 }
