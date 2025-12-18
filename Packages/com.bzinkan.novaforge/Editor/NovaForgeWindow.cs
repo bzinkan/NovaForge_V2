@@ -1,47 +1,73 @@
 using UnityEngine;
 using UnityEditor;
-using NovaForge.Networking; // 👈 This enables access to the APIManager
-// using NovaForge.Models;  // (Add this later when we implement the models)
-using NovaForge.Settings;
+using NovaForge.Networking; // Connects to your API Manager
+// using NovaForge.Models; // We'll uncomment this when we handle the response
 
 namespace NovaForge.Editor
 {
-    /// <summary>
-    /// Primary entry point for generating scenes within the Unity Editor.
-    /// </summary>
     public class NovaForgeWindow : EditorWindow
     {
-        private string prompt;
-        private NovaForgeSettings settings;
-        private readonly NovaForgeAPIManager apiManager = new();
+        // 1. UI Variables
+        string userPrompt = "A futuristic city with neon lights..."; // Default text
+        string statusMessage = "Ready to create.";
+        bool isProcessing = false;
 
-        [MenuItem("NovaForge/Open Generator")]
+        // 2. Add the Menu Item
+        [MenuItem("NovaForge/Open Generator ✨")]
         public static void ShowWindow()
         {
-            var window = GetWindow<NovaForgeWindow>("NovaForge Generator");
-            window.minSize = new Vector2(420, 320);
+            // Opens the window and gives it a title
+            GetWindow<NovaForgeWindow>("NovaForge");
         }
 
-        private void OnGUI()
+        // 3. Draw the User Interface
+        void OnGUI()
         {
-            EditorGUILayout.LabelField("NovaForge Generator", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("Provide a prompt to generate a 3D scene using your configured APIs.", MessageType.Info);
+            // -- Header --
+            GUILayout.Space(10);
+            GUILayout.Label("NovaForge V2 Generator", EditorStyles.boldLabel);
+            GUILayout.Space(5);
 
-            using (new EditorGUILayout.VerticalScope("box"))
-            {
-                settings = (NovaForgeSettings)EditorGUILayout.ObjectField("Settings", settings, typeof(NovaForgeSettings), false);
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Prompt");
-                prompt = EditorGUILayout.TextArea(prompt, GUILayout.Height(120));
-            }
+            // -- Prompt Input --
+            GUILayout.Label("Describe your scene:", EditorStyles.label);
+            
+            // Create a scrollable text area with a fixed height
+            GUIStyle textAreaStyle = new GUIStyle(EditorStyles.textArea);
+            textAreaStyle.wordWrap = true;
+            userPrompt = EditorGUILayout.TextArea(userPrompt, textAreaStyle, GUILayout.Height(80));
 
-            EditorGUI.BeginDisabledGroup(string.IsNullOrWhiteSpace(prompt) || settings == null);
-            if (GUILayout.Button("Generate Scene"))
+            GUILayout.Space(15);
+
+            // -- Generate Button --
+            // If we are processing, disable the button so they can't spam click
+            EditorGUI.BeginDisabledGroup(isProcessing);
+            
+            if (GUILayout.Button("Generate Scene 🚀", GUILayout.Height(40)))
             {
-                Debug.Log("NovaForge generation triggered.");
-                // Future implementation will call apiManager.PostAsync with configured endpoints.
+                TriggerGeneration();
             }
+            
             EditorGUI.EndDisabledGroup();
+
+            // -- Status Bar --
+            GUILayout.Space(10);
+            GUILayout.Label($"Status: {statusMessage}", EditorStyles.helpBox);
+        }
+
+        // 4. The Trigger Logic
+        private async void TriggerGeneration()
+        {
+            isProcessing = true;
+            statusMessage = "Contacting AI... 🤖";
+            
+            // Just a debug log for now to prove the UI works
+            Debug.Log($"[NovaForge] Sending prompt: {userPrompt}");
+
+            // TODO: Connect this to NovaForgeAPIManager later!
+            await System.Threading.Tasks.Task.Delay(1000); // Fake delay for effect
+
+            statusMessage = "Generation Complete! (Simulation)";
+            isProcessing = false;
         }
     }
 }
