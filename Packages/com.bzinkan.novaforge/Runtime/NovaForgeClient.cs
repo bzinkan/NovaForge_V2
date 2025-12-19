@@ -10,7 +10,7 @@ namespace NovaForge.Runtime
     [Serializable]
     public class ForgeRequest
     {
-        public string api_key;
+        public string api_key; // Matches main.py
         public string prompt;
         public string image_url;
     }
@@ -35,7 +35,7 @@ namespace NovaForge.Runtime
     public class NovaForgeClient : MonoBehaviour
     {
         [Header("Configuration")]
-        public NovaForgeConfig config;
+        public NovaForgeConfig config; // Drag your Settings/Config asset here
 
         [Header("Scene Settings")]
         public GameObject placeholderPrefab;
@@ -45,7 +45,7 @@ namespace NovaForge.Runtime
         {
             if (config == null)
             {
-                Debug.LogError("❌ NovaForge: No Configuration assigned!");
+                Debug.LogError("❌ NovaForge: No Configuration assigned! Create one in Assets > Create > NovaForge > Settings");
                 return;
             }
             StartCoroutine(PostRequest(userPrompt));
@@ -53,10 +53,11 @@ namespace NovaForge.Runtime
 
         IEnumerator PostRequest(string prompt)
         {
+            // Uses the URL from your Config asset
             string url = config.saasEndpointURL + "/api/generate";
 
             ForgeRequest req = new ForgeRequest();
-            req.api_key = config.userAuthToken;
+            req.api_key = config.userAuthToken; // Uses the Token from your Config asset
             req.prompt = prompt;
 
             string jsonBody = JsonUtility.ToJson(req);
@@ -76,7 +77,7 @@ namespace NovaForge.Runtime
             }
             else
             {
-                Debug.Log("✅ Architect Blueprints Received.");
+                Debug.Log("✅ Architect Blueprints Received: " + request.downloadHandler.text);
                 ProcessResponse(request.downloadHandler.text);
             }
         }
@@ -89,11 +90,12 @@ namespace NovaForge.Runtime
             {
                 Debug.Log($"🔨 Dispatched to: {response.worker}");
 
-                if (placeholderPrefab != null)
+                if (placeholderPrefab != null && spawnPoint != null)
                 {
                     GameObject obj = Instantiate(placeholderPrefab, spawnPoint.position, Quaternion.identity);
                     obj.name = "Pending_Forge_Asset";
 
+                    // Apply Dimensions from Gemini/OpenAI
                     if (response.dimensions != null)
                     {
                         float w = response.dimensions.width;
