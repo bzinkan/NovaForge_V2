@@ -26,6 +26,7 @@ namespace NovaForge.Core
             // 3. Build Terrain
             if (recipe.environment.terrain.enabled)
             {
+                // FIX: Explicitly specify we are using YOUR model here
                 await BuildTerrainAsync(recipe.environment.terrain);
             }
 
@@ -60,7 +61,8 @@ namespace NovaForge.Core
             }
         }
 
-        private static async Task BuildTerrainAsync(TerrainData data)
+        // FIX: Use 'NovaForge.Models.TerrainData' to avoid confusion with Unity's class
+        private static async Task BuildTerrainAsync(NovaForge.Models.TerrainData data)
         {
             Debug.Log("[NovaForge] Downloading Heightmap...");
             
@@ -68,12 +70,11 @@ namespace NovaForge.Core
             Texture2D heightmapTexture = await DownloadTextureAsync(data.heightmap_url);
             if (heightmapTexture == null) return;
 
-            // 2. Create Terrain Data
+            // 2. Create Unity's Terrain Data
+            // FIX: Explicitly use 'UnityEngine.TerrainData'
             UnityEngine.TerrainData terrainData = new UnityEngine.TerrainData();
             
-            // Unity Terrain Size: [Width (x), Height (y - altitude), Length (z)]
-            // JSON sends [Width, Length, Altitude]
-            terrainData.heightmapResolution = 513; // Standard Unity resolution
+            terrainData.heightmapResolution = 513; 
             terrainData.size = new Vector3(data.size[0], data.size[2], data.size[1]);
 
             // 3. Apply Heights
@@ -109,17 +110,13 @@ namespace NovaForge.Core
         {
             float[,] heights = new float[resolution, resolution];
             
-            // Resize logic would go here, but for now we sample the center
-            // Simple approach: Map texture pixels to height array
             for (int x = 0; x < resolution; x++)
             {
                 for (int y = 0; y < resolution; y++)
                 {
-                    // Calculate normalized UV coordinates (0.0 to 1.0)
                     float u = (float)x / (resolution - 1);
                     float v = (float)y / (resolution - 1);
                     
-                    // Sample the texture pixel (Grayscale value = Height)
                     Color pixel = texture.GetPixelBilinear(u, v);
                     heights[y, x] = pixel.grayscale;
                 }
