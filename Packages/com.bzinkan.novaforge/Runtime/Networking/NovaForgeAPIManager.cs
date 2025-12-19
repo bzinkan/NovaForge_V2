@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using NovaForge.Settings;
+using System.Text;
 
 // 👇 THIS NAMESPACE MUST MATCH WHAT YOUR WINDOW SCRIPT EXPECTS
 namespace NovaForge.Networking 
@@ -16,11 +17,16 @@ namespace NovaForge.Networking
                 return null;
             }
 
-            string jsonData = $"{{\"user_prompt\":\"{EscapeJson(prompt)}\",\"auth_token\":\"{EscapeJson(config.userAuthToken)}\"}}";
+            string jsonData = $"{{\"prompt\":\"{EscapeJson(prompt)}\",\"api_key\":\"{EscapeJson(config.userAuthToken)}\"}}";
 
-            using (UnityWebRequest request = UnityWebRequest.Post(config.saasEndpointURL, jsonData, "application/json"))
+            Debug.Log($"[NovaForge] Transmitting to Replit: {jsonData}");
+
+            using (UnityWebRequest request = new UnityWebRequest(config.saasEndpointURL + "/api/generate", "POST"))
             {
+                byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
                 request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
 
                 var operation = request.SendWebRequest();
 
@@ -29,6 +35,7 @@ namespace NovaForge.Networking
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
+                    Debug.Log($"[NovaForge] Success: {request.downloadHandler.text}");
                     return request.downloadHandler.text;
                 }
 
