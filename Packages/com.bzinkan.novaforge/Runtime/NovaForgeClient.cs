@@ -8,59 +8,31 @@ using NovaForge.Settings;
 namespace NovaForge.Runtime
 {
     [Serializable]
-    public class ForgeRequest
-    {
-        public string api_key; // Matches main.py
-        public string prompt;
-        public string image_url;
-    }
+    public class ForgeRequest { public string api_key; public string prompt; public string image_url; }
 
     [Serializable]
-    public class ForgeResponse
-    {
-        public string status;
-        public string worker;
-        public Dimensions dimensions;
-        public string message;
-    }
+    public class ForgeResponse { public string status; public string worker; public Dimensions dimensions; public string message; }
 
     [Serializable]
-    public class Dimensions
-    {
-        public float height;
-        public float width;
-        public string category;
-    }
+    public class Dimensions { public float height; public float width; public string category; }
 
     public class NovaForgeClient : MonoBehaviour
     {
-        [Header("Configuration")]
-        public NovaForgeConfig config; // Drag your Settings/Config asset here
-
-        [Header("Scene Settings")]
+        public NovaForgeConfig config;
         public GameObject placeholderPrefab;
         public Transform spawnPoint;
 
         public void SendForgeRequest(string userPrompt)
         {
-            if (config == null)
-            {
-                Debug.LogError("❌ NovaForge: No Configuration assigned! Create one in Assets > Create > NovaForge > Settings");
-                return;
-            }
+            if (config == null) { Debug.LogError("❌ NovaForge: No Config assigned!"); return; }
             StartCoroutine(PostRequest(userPrompt));
         }
 
         IEnumerator PostRequest(string prompt)
         {
-            // Uses the URL from your Config asset
             string url = config.saasEndpointURL + "/api/generate";
-
-            ForgeRequest req = new ForgeRequest();
-            req.api_key = config.userAuthToken; // Uses the Token from your Config asset
-            req.prompt = prompt;
-
-            string jsonBody = JsonUtility.ToJson(req);
+            // Uses 'userAuthToken' from config as 'api_key'
+            string jsonBody = JsonUtility.ToJson(new ForgeRequest { api_key = config.userAuthToken, prompt = prompt });
 
             UnityWebRequest request = new UnityWebRequest(url, "POST");
             byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
@@ -71,43 +43,23 @@ namespace NovaForge.Runtime
             Debug.Log($"🚀 NovaForge: Contacting Architect for '{prompt}'...");
             yield return request.SendWebRequest();
 
-            if (request.result != UnityWebRequest.Result.Success)
+            if (request.result == UnityWebRequest.Result.Success)
             {
-                Debug.LogError("❌ NovaForge Error: " + request.error + " | " + request.downloadHandler.text);
-            }
-            else
-            {
-                Debug.Log("✅ Architect Blueprints Received: " + request.downloadHandler.text);
+                Debug.Log("✅ Response: " + request.downloadHandler.text);
                 ProcessResponse(request.downloadHandler.text);
             }
+            else { Debug.LogError("❌ Error: " + request.error); }
         }
 
         void ProcessResponse(string json)
         {
-            ForgeResponse response = JsonUtility.FromJson<ForgeResponse>(json);
-
-            if (response.status == "success")
+            ForgeResponse res = JsonUtility.FromJson<ForgeResponse>(json);
+            if (res.status == "success" && placeholderPrefab != null)
             {
-                Debug.Log($"🔨 Dispatched to: {response.worker}");
-
-                if (placeholderPrefab != null && spawnPoint != null)
-                {
-                    GameObject obj = Instantiate(placeholderPrefab, spawnPoint.position, Quaternion.identity);
-                    obj.name = "Pending_Forge_Asset";
-
-                    // Apply Dimensions from Gemini/OpenAI
-                    if (response.dimensions != null)
-                    {
-                        float w = response.dimensions.width;
-                        float h = response.dimensions.height;
-                        obj.transform.localScale = new Vector3(w, h, w);
-                        Debug.Log($"📏 Placeholder Scaled to: {h}m Height x {w}m Width");
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogError("Server Message: " + response.message);
+                GameObject obj = Instantiate(placeholderPrefab, spawnPoint.position, Quaternion.identity);
+                // Apply OpenAI/Gemini Dimensions
+                if (res.dimensions != null)
+                    obj.transform.localScale = new Vector3(res.dimensions.width, res.dimensions.height, res.dimensions.width);
             }
         }
     }

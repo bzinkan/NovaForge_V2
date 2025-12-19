@@ -54,7 +54,7 @@ namespace NovaForge.Core
             RenderSettings.fogDensity = data.fog_density;
             RenderSettings.fog = true;
             
-            Light sun = GameObject.FindObjectOfType<Light>();
+            Light sun = GameObject.FindFirstObjectByType<Light>();
             if (sun != null && sun.type == LightType.Directional)
             {
                 sun.intensity = data.sun_intensity;
