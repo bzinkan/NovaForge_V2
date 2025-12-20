@@ -1,5 +1,6 @@
-using UnityEngine;
+using System;
 using UnityEditor;
+using UnityEngine;
 using NovaForge.Networking; // Connects to your API Manager
 using NovaForge.Settings;
 // using NovaForge.Models; // We'll uncomment this when we handle the response
@@ -16,6 +17,12 @@ namespace NovaForge.Editor
         public NovaForgeConfig config;
 
         readonly NovaForgeAPIManager apiManager = new NovaForgeAPIManager();
+
+        [Serializable]
+        private class GenerationResponse
+        {
+            public string job_id;
+        }
 
         // 2. Add the Menu Item
         [MenuItem("NovaForge/Open Generator ✨")]
@@ -80,9 +87,23 @@ namespace NovaForge.Editor
 
             string response = await apiManager.RequestSceneGeneration(userPrompt, config);
 
-            statusMessage = string.IsNullOrEmpty(response)
-                ? "Generation failed. Check console for errors."
-                : "Generation request completed.";
+            if (string.IsNullOrEmpty(response))
+            {
+                statusMessage = "Generation failed. Check console for errors.";
+                isProcessing = false;
+                return;
+            }
+
+            GenerationResponse generationResponse = JsonUtility.FromJson<GenerationResponse>(response);
+            if (generationResponse == null || string.IsNullOrEmpty(generationResponse.job_id))
+            {
+                statusMessage = "Generation response missing job id.";
+                isProcessing = false;
+                return;
+            }
+
+            statusMessage = "Generation started. Polling for output...";
+            NovaForgeImporter.PollAndImport(generationResponse.job_id, userPrompt);
 
             isProcessing = false;
         }
