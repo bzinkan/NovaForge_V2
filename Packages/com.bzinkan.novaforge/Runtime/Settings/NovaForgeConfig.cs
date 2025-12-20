@@ -2,15 +2,15 @@ using UnityEngine;
 
 namespace NovaForge.Settings
 {
-    [CreateAssetMenu(fileName = "NovaForgeConfig", menuName = "NovaForge/Config", order = 0)]
+    [CreateAssetMenu(fileName = "NovaForgeConfig", menuName = "NovaForge/Config")]
     public class NovaForgeConfig : ScriptableObject
     {
-        [Tooltip("The URL of your NovaForge Replit Server")]
-        public string saasEndpointURL;
+        [Header("Server Configuration")]
+        [Tooltip("The URL of your Replit backend. Ensure there is no trailing slash at the end.")]
+        public string saasEndpointUrl = "https://novaforge.replit.app";
 
-        [Tooltip("Your unique SaaS API Token")]
+        [Header("Authentication")]
+        [Tooltip("Paste your API Key from the Replit Dashboard here (e.g., nf_live_...).")]
         public string userAuthToken;
-
-        public bool useDebugServer = false;
     }
 }
