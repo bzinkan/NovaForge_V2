@@ -7,7 +7,8 @@ namespace NovaForge.Settings
     {
         [Header("Server Configuration")]
         [Tooltip("The URL of your Replit backend. Ensure there is no trailing slash at the end.")]
-        public string saasEndpointUrl = "https://novaforge.replit.app";
+        // I changed 'Url' to 'URL' below to match your other scripts
+        public string saasEndpointURL = "https://novaforge.replit.app";
 
         [Header("Authentication")]
         [Tooltip("Paste your API Key from the Replit Dashboard here (e.g., nf_live_...).")]
