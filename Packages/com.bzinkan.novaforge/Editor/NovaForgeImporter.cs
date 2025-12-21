@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
+using NovaForge.Networking;
+using NovaForge.Settings;
 
 namespace NovaForge.Editor
 {
@@ -12,38 +14,74 @@ namespace NovaForge.Editor
         private const int PollIntervalMilliseconds = 2000;
         private const int TimeoutSeconds = 60;
 
-        public static async void PollAndImport(string jobId, string outputName)
+        [Serializable]
+        public class StatusResponse
+        {
+            public string status;
+            public string download_url;
+            public string error;
+        }
+
+        public static async Task<StatusResponse> PollAndImport(string jobId, string outputName, NovaForgeConfig config, NovaForgeAPIManager apiManager)
         {
             if (string.IsNullOrWhiteSpace(jobId))
             {
                 Debug.LogError("[NovaForge] PollAndImport called with empty jobId.");
-                return;
+                return new StatusResponse { status = "failed", error = "Missing job id." };
+            }
+
+            if (config == null || apiManager == null)
+            {
+                Debug.LogError("[NovaForge] PollAndImport called with missing config or API manager.");
+                return new StatusResponse { status = "failed", error = "Missing configuration or API manager." };
             }
 
             string safeName = SanitizeFileName(outputName);
-            string url = $"https://novaforge.nyc3.digitaloceanspaces.com/novaforge/outputs/{jobId}.glb";
             DateTime startTime = DateTime.UtcNow;
 
-            Debug.Log($"[NovaForge] Polling for output: {url}");
+            Debug.Log($"[NovaForge] Polling for output: {jobId}");
 
             while ((DateTime.UtcNow - startTime).TotalSeconds < TimeoutSeconds)
             {
-                using (UnityWebRequest headRequest = UnityWebRequest.Head(url))
+                string response = await apiManager.GetJobStatus(jobId, config);
+                if (string.IsNullOrWhiteSpace(response))
                 {
-                    await SendRequestAsync(headRequest);
+                    await Task.Delay(PollIntervalMilliseconds);
+                    continue;
+                }
 
-                    if (headRequest.result == UnityWebRequest.Result.Success)
+                StatusResponse statusResponse = JsonUtility.FromJson<StatusResponse>(response);
+                if (statusResponse == null)
+                {
+                    await Task.Delay(PollIntervalMilliseconds);
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(statusResponse.error))
+                {
+                    Debug.LogError($"[NovaForge] Status check failed: {statusResponse.error}");
+                    return statusResponse;
+                }
+
+                if (string.Equals(statusResponse.status, "completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (string.IsNullOrWhiteSpace(statusResponse.download_url))
                     {
-                        Debug.Log("[NovaForge] Output found. Downloading...");
-                        await DownloadAndImport(url, safeName);
-                        return;
+                        statusResponse.error = "Status completed but no download_url provided.";
+                        Debug.LogError("[NovaForge] Status completed without download_url.");
+                        return statusResponse;
                     }
+
+                    Debug.Log("[NovaForge] Output found. Downloading...");
+                    await DownloadAndImport(statusResponse.download_url, safeName);
+                    return statusResponse;
                 }
 
                 await Task.Delay(PollIntervalMilliseconds);
             }
 
             Debug.LogWarning("[NovaForge] Timed out waiting for output.");
+            return new StatusResponse { status = "timeout", error = "Timed out waiting for output." };
         }
 
         private static async Task DownloadAndImport(string url, string outputName)

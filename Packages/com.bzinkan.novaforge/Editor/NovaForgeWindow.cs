@@ -103,7 +103,22 @@ namespace NovaForge.Editor
             }
 
             statusMessage = "Generation started. Polling for output...";
-            NovaForgeImporter.PollAndImport(generationResponse.job_id, userPrompt);
+            NovaForgeImporter.StatusResponse statusResponse =
+                await NovaForgeImporter.PollAndImport(generationResponse.job_id, userPrompt, config, apiManager);
+            if (statusResponse == null)
+            {
+                statusMessage = "Polling failed to return a response.";
+            }
+            else if (!string.Equals(statusResponse.status, "completed", StringComparison.OrdinalIgnoreCase))
+            {
+                statusMessage = string.IsNullOrWhiteSpace(statusResponse.error)
+                    ? "Generation failed during polling."
+                    : $"Generation failed: {statusResponse.error}";
+            }
+            else
+            {
+                statusMessage = "Generation complete.";
+            }
 
             isProcessing = false;
         }
