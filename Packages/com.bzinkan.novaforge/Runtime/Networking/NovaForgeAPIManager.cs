@@ -44,6 +44,23 @@ namespace NovaForge.Networking
             }
         }
 
+        public async Task<string> GetJobStatus(string jobId, NovaForgeConfig config)
+        {
+            string url = $"{config.saasEndpointURL}/api/status/{jobId}";
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                var operation = request.SendWebRequest();
+                while (!operation.isDone)
+                    await Task.Yield();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                    return request.downloadHandler.text;
+
+                Debug.LogError($"[NovaForge] Status Check Failed: {request.error}");
+                return null;
+            }
+        }
+
         private static string EscapeJson(string value)
         {
             return string.IsNullOrEmpty(value) ? string.Empty : value.Replace("\\", "\\\\").Replace("\"", "\\\"");
