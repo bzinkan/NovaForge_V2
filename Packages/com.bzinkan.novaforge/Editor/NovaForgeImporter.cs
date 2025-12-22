@@ -12,7 +12,8 @@ namespace NovaForge.Editor
     public static class NovaForgeImporter
     {
         private const int PollIntervalMilliseconds = 2000;
-        private const int TimeoutSeconds = 60;
+        // UPDATE: Increased to 5 minutes (300 seconds) for Meshy
+        private const int TimeoutSeconds = 300;
 
         [Serializable]
         public class StatusResponse
@@ -20,20 +21,21 @@ namespace NovaForge.Editor
             public string status;
             public string download_url;
             public string error;
+            public int progress; // <--- Added to catch Replit's data
         }
 
-        public static async Task<StatusResponse> PollAndImport(string jobId, string outputName, NovaForgeConfig config, NovaForgeAPIManager apiManager)
+        // UPDATE: Added 'onProgress' callback
+        public static async Task<StatusResponse> PollAndImport(
+            string jobId,
+            string outputName,
+            NovaForgeConfig config,
+            NovaForgeAPIManager apiManager,
+            Action<string> onProgress)
         {
             if (string.IsNullOrWhiteSpace(jobId))
             {
                 Debug.LogError("[NovaForge] PollAndImport called with empty jobId.");
                 return new StatusResponse { status = "failed", error = "Missing job id." };
-            }
-
-            if (config == null || apiManager == null)
-            {
-                Debug.LogError("[NovaForge] PollAndImport called with missing config or API manager.");
-                return new StatusResponse { status = "failed", error = "Missing configuration or API manager." };
             }
 
             string safeName = SanitizeFileName(outputName);
@@ -57,22 +59,23 @@ namespace NovaForge.Editor
                     continue;
                 }
 
+                // --- PROGRESS UPDATE LOGIC ---
+                if (statusResponse.status == "processing")
+                {
+                    // Update the UI via the callback
+                    string msg = $"Processing: {statusResponse.progress}%";
+                    onProgress?.Invoke(msg);
+                }
+                // -----------------------------
+
                 if (!string.IsNullOrWhiteSpace(statusResponse.error))
                 {
-                    Debug.LogError($"[NovaForge] Status check failed: {statusResponse.error}");
                     return statusResponse;
                 }
 
                 if (string.Equals(statusResponse.status, "completed", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (string.IsNullOrWhiteSpace(statusResponse.download_url))
-                    {
-                        statusResponse.error = "Status completed but no download_url provided.";
-                        Debug.LogError("[NovaForge] Status completed without download_url.");
-                        return statusResponse;
-                    }
-
-                    Debug.Log("[NovaForge] Output found. Downloading...");
+                    onProgress?.Invoke("Downloading..."); // Update UI
                     await DownloadAndImport(statusResponse.download_url, safeName);
                     return statusResponse;
                 }
@@ -80,7 +83,6 @@ namespace NovaForge.Editor
                 await Task.Delay(PollIntervalMilliseconds);
             }
 
-            Debug.LogWarning("[NovaForge] Timed out waiting for output.");
             return new StatusResponse { status = "timeout", error = "Timed out waiting for output." };
         }
 
@@ -113,35 +115,19 @@ namespace NovaForge.Editor
                     Selection.activeObject = importedAsset;
                     Debug.Log("[NovaForge] Imported asset instantiated in scene.");
                 }
-                else
-                {
-                    Debug.Log("[NovaForge] Imported asset saved. Instantiate manually if needed.");
-                }
             }
         }
 
         private static async Task SendRequestAsync(UnityWebRequest request)
         {
             UnityWebRequestAsyncOperation operation = request.SendWebRequest();
-            while (!operation.isDone)
-            {
-                await Task.Yield();
-            }
+            while (!operation.isDone) await Task.Yield();
         }
 
         private static string SanitizeFileName(string rawName)
         {
-            if (string.IsNullOrWhiteSpace(rawName))
-            {
-                return "NovaForgeOutput";
-            }
-
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-            foreach (char invalid in invalidChars)
-            {
-                rawName = rawName.Replace(invalid.ToString(), "_");
-            }
-
+            if (string.IsNullOrWhiteSpace(rawName)) return "NovaForgeOutput";
+            foreach (char c in Path.GetInvalidFileNameChars()) rawName = rawName.Replace(c, '_');
             return rawName.Trim();
         }
     }
