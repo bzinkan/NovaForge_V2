@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: NovaForgeConfig
   m_EditorClassIdentifier: NovaForge.Runtime::NovaForge.Settings.NovaForgeConfig
   saasEndpointURL: https://novaforge.replit.app
-  userAuthToken: 
+  userAuthToken: nf_live_ee5598dd
