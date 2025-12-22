@@ -119,28 +119,4 @@ namespace NovaForge.Editor
         }
     }
 
-    public class NovaForgeAssetProcessor : AssetPostprocessor
-    {
-        void OnPostprocessModel(GameObject g)
-        {
-            if (g.name.Contains("Terrain"))
-            {
-                Renderer[] renderers = g.GetComponentsInChildren<Renderer>();
-                foreach (Renderer r in renderers)
-                {
-                    Shader vertexShader = Shader.Find("Universal Render Pipeline/Lit");
-
-                    if (vertexShader != null)
-                    {
-                        r.sharedMaterial = new Material(vertexShader);
-                        r.sharedMaterial.name = "Auto_VertexColor_Material";
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[NovaForge] Could not find 'Universal Render Pipeline/Lit' shader. Magenta might persist.");
-                    }
-                }
-            }
-        }
-    }
 }
