@@ -104,7 +104,17 @@ namespace NovaForge.Editor
 
             statusMessage = "Generation started. Polling for output...";
             NovaForgeImporter.StatusResponse statusResponse =
-                await NovaForgeImporter.PollAndImport(generationResponse.job_id, userPrompt, config, apiManager);
+                await NovaForgeImporter.PollAndImport(
+                    generationResponse.job_id,
+                    userPrompt,
+                    config,
+                    apiManager,
+                    (progressMessage) =>
+                    {
+                        statusMessage = progressMessage;
+                        Repaint(); // Forces the UI to redraw immediately
+                    }
+                );
             if (statusResponse == null)
             {
                 statusMessage = "Polling failed to return a response.";
