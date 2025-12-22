@@ -17,7 +17,13 @@ namespace NovaForge.Networking
                 return null;
             }
 
-            string jsonData = $"{{\"prompt\":\"{EscapeJson(prompt)}\",\"api_key\":\"{EscapeJson(config.userAuthToken)}\"}}";
+            // FIX: Use a proper object structure to match Replit's expectations exactly
+            // We send 'image_url' as null so Replit knows it's a text-only prompt
+            string jsonData = "{"
+                + "\"prompt\":\"" + EscapeJson(prompt) + "\","
+                + "\"api_key\":\"" + EscapeJson(config.userAuthToken) + "\","
+                + "\"image_url\": null"
+                + "}";
 
             Debug.Log($"[NovaForge] Transmitting to Replit: {jsonData}");
 
