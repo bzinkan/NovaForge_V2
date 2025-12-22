@@ -13,21 +13,21 @@ namespace NovaForge.Networking
         {
             if (config == null)
             {
-                Debug.LogError("NovaForgeConfig is missing. Please assign a config asset.");
+                Debug.LogError("NovaForgeConfig is missing.");
                 return null;
             }
 
-            // FIX: Use a proper object structure to match Replit's expectations exactly
-            // We send 'image_url' as null so Replit knows it's a text-only prompt
+            string url = config.saasEndpointURL.TrimEnd('/') + "/api/generate";
             string jsonData = "{"
                 + "\"prompt\":\"" + EscapeJson(prompt) + "\","
                 + "\"api_key\":\"" + EscapeJson(config.userAuthToken) + "\","
                 + "\"image_url\": null"
                 + "}";
 
-            Debug.Log($"[NovaForge] Transmitting to Replit: {jsonData}");
+            Debug.Log($"[NovaForge] Transmitting to: {url}");
+            Debug.Log($"[NovaForge] Payload: {jsonData}");
 
-            using (UnityWebRequest request = new UnityWebRequest(config.saasEndpointURL + "/api/generate", "POST"))
+            using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
             {
                 byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
                 request.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -39,14 +39,16 @@ namespace NovaForge.Networking
                 while (!operation.isDone)
                     await Task.Yield();
 
-                if (request.result == UnityWebRequest.Result.Success)
+                if (request.result != UnityWebRequest.Result.Success)
                 {
-                    Debug.Log($"[NovaForge] Success: {request.downloadHandler.text}");
-                    return request.downloadHandler.text;
+                    Debug.LogError($"[NovaForge] FAILED. Code: {request.responseCode}");
+                    Debug.LogError($"[NovaForge] Error: {request.error}");
+                    Debug.LogError($"[NovaForge] Response Body: {request.downloadHandler.text}");
+                    return null;
                 }
 
-                Debug.LogError($"NovaForge API Error: {request.error} | Response: {request.downloadHandler.text}");
-                return null;
+                Debug.Log($"[NovaForge] Success: {request.downloadHandler.text}");
+                return request.downloadHandler.text;
             }
         }
 
@@ -69,7 +71,15 @@ namespace NovaForge.Networking
 
         private static string EscapeJson(string value)
         {
-            return string.IsNullOrEmpty(value) ? string.Empty : value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t");
         }
     }
 }
