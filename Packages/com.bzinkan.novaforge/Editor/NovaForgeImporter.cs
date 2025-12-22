@@ -12,8 +12,8 @@ namespace NovaForge.Editor
     public static class NovaForgeImporter
     {
         private const int PollIntervalMilliseconds = 2000;
-        // UPDATE: Increased to 5 minutes (300 seconds) for Meshy
-        private const int TimeoutSeconds = 300;
+        // FIX: Set to 1 hour. We trust Replit to tell us if it failed.
+        private const int TimeoutSeconds = 3600; 
 
         [Serializable]
         public class StatusResponse
@@ -21,30 +21,29 @@ namespace NovaForge.Editor
             public string status;
             public string download_url;
             public string error;
-            public int progress; // <--- Added to catch Replit's data
+            public int progress;
         }
 
-        // UPDATE: Added 'onProgress' callback
         public static async Task<StatusResponse> PollAndImport(
             string jobId,
             string outputName,
             NovaForgeConfig config,
             NovaForgeAPIManager apiManager,
-            Action<string> onProgress)
+            Action<string, float> onProgress)
         {
             if (string.IsNullOrWhiteSpace(jobId))
-            {
-                Debug.LogError("[NovaForge] PollAndImport called with empty jobId.");
                 return new StatusResponse { status = "failed", error = "Missing job id." };
-            }
 
             string safeName = SanitizeFileName(outputName);
             DateTime startTime = DateTime.UtcNow;
 
-            Debug.Log($"[NovaForge] Polling for output: {jobId}");
+            Debug.Log($"[NovaForge] Polling started for: {jobId}");
 
             while ((DateTime.UtcNow - startTime).TotalSeconds < TimeoutSeconds)
             {
+                // Calculate elapsed time for UI display
+                double elapsed = (DateTime.UtcNow - startTime).TotalSeconds;
+
                 string response = await apiManager.GetJobStatus(jobId, config);
                 if (string.IsNullOrWhiteSpace(response))
                 {
@@ -53,75 +52,63 @@ namespace NovaForge.Editor
                 }
 
                 StatusResponse statusResponse = JsonUtility.FromJson<StatusResponse>(response);
-                if (statusResponse == null)
+                if (statusResponse != null)
                 {
-                    await Task.Delay(PollIntervalMilliseconds);
-                    continue;
-                }
+                    // 1. REPLIT SAYS: PROCESSING
+                    if (statusResponse.status == "processing")
+                    {
+                        float percent = statusResponse.progress / 100f;
+                        string msg = $"Server is working... {statusResponse.progress}% ({elapsed:F0}s)";
+                        onProgress?.Invoke(msg, percent);
+                    }
+                    
+                    // 2. REPLIT SAYS: COMPLETED
+                    else if (statusResponse.status == "completed")
+                    {
+                        onProgress?.Invoke("Downloading...", 1.0f);
+                        await DownloadAndImport(statusResponse.download_url, safeName);
+                        return statusResponse;
+                    }
 
-                // --- PROGRESS UPDATE LOGIC ---
-                if (statusResponse.status == "processing")
-                {
-                    // Update the UI via the callback
-                    string msg = $"Processing: {statusResponse.progress}%";
-                    onProgress?.Invoke(msg);
-                }
-                // -----------------------------
-
-                if (!string.IsNullOrWhiteSpace(statusResponse.error))
-                {
-                    return statusResponse;
-                }
-
-                if (string.Equals(statusResponse.status, "completed", StringComparison.OrdinalIgnoreCase))
-                {
-                    onProgress?.Invoke("Downloading..."); // Update UI
-                    await DownloadAndImport(statusResponse.download_url, safeName);
-                    return statusResponse;
+                    // 3. REPLIT SAYS: FAILED (This is what you asked for!)
+                    else if (statusResponse.status == "failed" || !string.IsNullOrWhiteSpace(statusResponse.error))
+                    {
+                        return statusResponse;
+                    }
                 }
 
                 await Task.Delay(PollIntervalMilliseconds);
             }
 
-            return new StatusResponse { status = "timeout", error = "Timed out waiting for output." };
+            return new StatusResponse { status = "timeout", error = "Client timed out (1 hour limit reached)." };
         }
 
         private static async Task DownloadAndImport(string url, string outputName)
         {
             using (UnityWebRequest getRequest = UnityWebRequest.Get(url))
             {
-                await SendRequestAsync(getRequest);
+                var op = getRequest.SendWebRequest();
+                while (!op.isDone) await Task.Yield();
 
-                if (getRequest.result != UnityWebRequest.Result.Success)
+                if (getRequest.result == UnityWebRequest.Result.Success)
                 {
-                    Debug.LogError($"[NovaForge] Download failed: {getRequest.error}");
-                    return;
+                    string directoryPath = Path.Combine(Application.dataPath, "NovaForge", "Generated");
+                    Directory.CreateDirectory(directoryPath);
+                    string filePath = Path.Combine(directoryPath, $"{outputName}.glb");
+                    File.WriteAllBytes(filePath, getRequest.downloadHandler.data);
+                    AssetDatabase.Refresh();
+                    
+                    string assetPath = $"Assets/NovaForge/Generated/{outputName}.glb";
+                    GameObject importedAsset = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+                    if (importedAsset != null)
+                    {
+                        PrefabUtility.InstantiatePrefab(importedAsset);
+                        Selection.activeObject = importedAsset;
+                        Debug.Log("[NovaForge] Asset imported successfully!");
+                    }
                 }
-
-                string directoryPath = Path.Combine(Application.dataPath, "NovaForge", "Generated");
-                Directory.CreateDirectory(directoryPath);
-
-                string filePath = Path.Combine(directoryPath, $"{outputName}.glb");
-                File.WriteAllBytes(filePath, getRequest.downloadHandler.data);
-
-                AssetDatabase.Refresh();
-
-                string assetPath = $"Assets/NovaForge/Generated/{outputName}.glb";
-                GameObject importedAsset = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
-
-                if (importedAsset != null)
-                {
-                    PrefabUtility.InstantiatePrefab(importedAsset);
-                    Selection.activeObject = importedAsset;
-                    Debug.Log("[NovaForge] Imported asset instantiated in scene.");
-                }
+                else { Debug.LogError($"[NovaForge] Download failed: {getRequest.error}"); }
             }
-        }
-
-        private static async Task SendRequestAsync(UnityWebRequest request)
-        {
-            UnityWebRequestAsyncOperation operation = request.SendWebRequest();
-            while (!operation.isDone) await Task.Yield();
         }
 
         private static string SanitizeFileName(string rawName)
