@@ -12,6 +12,7 @@ namespace NovaForge.Editor
         // 1. UI Variables
         string userPrompt = "A futuristic city with neon lights..."; // Default text
         string statusMessage = "Ready to create.";
+        float progressValue = 0f; // 0.0 to 1.0
         bool isProcessing = false;
 
         public NovaForgeConfig config;
@@ -67,7 +68,16 @@ namespace NovaForge.Editor
 
             // -- Status Bar --
             GUILayout.Space(10);
-            GUILayout.Label($"Status: {statusMessage}", EditorStyles.helpBox);
+
+            if (isProcessing)
+            {
+                Rect progressRect = EditorGUILayout.GetControlRect(false, 20);
+                EditorGUI.ProgressBar(progressRect, progressValue, statusMessage);
+            }
+            else
+            {
+                GUILayout.Label($"Status: {statusMessage}", EditorStyles.helpBox);
+            }
         }
 
         // 4. The Trigger Logic
@@ -80,6 +90,7 @@ namespace NovaForge.Editor
             }
 
             isProcessing = true;
+            progressValue = 0f;
             statusMessage = "Connecting to NovaForge Cloud...";
             
             // Just a debug log for now to prove the UI works
@@ -109,9 +120,10 @@ namespace NovaForge.Editor
                     userPrompt,
                     config,
                     apiManager,
-                    (progressMessage, progress) =>
+                    (progressMessage, percent) =>
                     {
                         statusMessage = progressMessage;
+                        progressValue = percent;
                         Repaint(); // Forces the UI to redraw immediately
                     }
                 );
@@ -128,6 +140,7 @@ namespace NovaForge.Editor
             else
             {
                 statusMessage = "Generation complete.";
+                progressValue = 1f;
             }
 
             isProcessing = false;
