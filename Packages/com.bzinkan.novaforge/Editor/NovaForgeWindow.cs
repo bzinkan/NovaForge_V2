@@ -109,7 +109,7 @@ namespace NovaForge.Editor
                     userPrompt,
                     config,
                     apiManager,
-                    (progressMessage) =>
+                    (progressMessage, progress) =>
                     {
                         statusMessage = progressMessage;
                         Repaint(); // Forces the UI to redraw immediately
